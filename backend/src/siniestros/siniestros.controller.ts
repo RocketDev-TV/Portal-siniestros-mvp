@@ -1,34 +1,38 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Request, UseGuards } from '@nestjs/common';
+import { Rol } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { SiniestrosService } from './siniestros.service';
 import { CreateSiniestroDto } from './dto/create-siniestro.dto';
-import { UpdateSiniestroDto } from './dto/update-siniestro.dto';
+import { UpdateEstatusDto } from './dto/update-estatus.dto';
 
+@UseGuards(JwtAuthGuard)
 @Controller('siniestros')
 export class SiniestrosController {
   constructor(private readonly siniestrosService: SiniestrosService) {}
 
-  @Post()
-  create(@Body() createSiniestroDto: CreateSiniestroDto) {
-    return this.siniestrosService.create(createSiniestroDto);
-  }
-
   @Get()
-  findAll() {
-    return this.siniestrosService.findAll();
+  findAll(@Request() req: any) {
+    return this.siniestrosService.findAll(req.user);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.siniestrosService.findOne(+id);
+  findOne(@Param('id') id: string, @Request() req: any) {
+    return this.siniestrosService.findOne(id, req.user);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSiniestroDto: UpdateSiniestroDto) {
-    return this.siniestrosService.update(+id, updateSiniestroDto);
+  @Post()
+  @UseGuards(RolesGuard)
+  @Roles(Rol.ADMIN, Rol.AJUSTADOR)
+  create(@Body() dto: CreateSiniestroDto, @Request() req: any) {
+    return this.siniestrosService.create(dto, req.user.id);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.siniestrosService.remove(+id);
+  @Patch(':id/estatus')
+  @UseGuards(RolesGuard)
+  @Roles(Rol.ADMIN, Rol.AJUSTADOR)
+  updateEstatus(@Param('id') id: string, @Body() dto: UpdateEstatusDto, @Request() req: any) {
+    return this.siniestrosService.updateEstatus(id, dto, req.user);
   }
 }
