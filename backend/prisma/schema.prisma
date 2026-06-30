@@ -1,0 +1,86 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  CLIENTE
+  AJUSTADOR
+  ADMIN
+}
+
+enum EstatusSiniestro {
+  REPORTADO
+  EN_REVISION
+  DOCUMENTOS_PENDIENTES
+  APROBADO
+  RECHAZADO
+  FINALIZADO
+}
+
+model User {
+  id                  String             @id @default(uuid())
+  email               String             @unique
+  password            String
+  nombre              String
+  rol                 Rol                @default(CLIENTE)
+  fechaCreacion       DateTime           @default(now())
+  
+  // Relaciones
+  siniestrosCliente   Siniestro[]        @relation("ClienteSiniestros")
+  siniestrosAsignados Siniestro[]        @relation("AjustadorSiniestros")
+  historialCambios    HistorialEstatus[] @relation("UsuarioCambios")
+}
+
+model Siniestro {
+  id            String           @id @default(uuid())
+  folio         String           @unique
+  descripcion   String
+  estatus       EstatusSiniestro @default(REPORTADO)
+  fechaReporte  DateTime         @default(now())
+  fechaFalla    DateTime?
+
+  // Foráneas
+  clienteId     String
+  cliente       User             @relation("ClienteSiniestros", fields: [clienteId], references: [id])
+  
+  ajustadorId   String?
+  ajustador     User?            @relation("AjustadorSiniestros", fields: [ajustadorId], references: [id])
+
+  // Relaciones
+  documentos    Documento[]
+  historial     HistorialEstatus[]
+}
+
+model Documento {
+  id            String    @id @default(uuid())
+  urlArchivo    String
+  tipo          String    // ej: "POLIZA", "IDENTIFICACION", "EVIDENCIA"
+  fechaSubida   DateTime  @default(now())
+
+  siniestroId   String
+  siniestro     Siniestro @relation(fields: [siniestroId], references: [id])
+}
+
+model HistorialEstatus {
+  id             String           @id @default(uuid())
+  estatusAnterior EstatusSiniestro?
+  estatusNuevo   EstatusSiniestro
+  comentario     String?
+  fechaCambio    DateTime         @default(now())
+
+  siniestroId    String
+  siniestro      Siniestro        @relation(fields: [siniestroId], references: [id])
+
+  cambiadoPorId  String
+  cambiadoPor    User             @relation("UsuarioCambios", fields: [cambiadoPorId], references: [id])
+}

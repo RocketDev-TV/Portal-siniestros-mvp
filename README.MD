@@ -1,14 +1,14 @@
-# 🛡️ Plataforma de Seguimiento de Siniestros - MVP
+# Plataforma de Seguimiento de Siniestros - MVP
 
 Un portal de autoservicio diseñado para brindar visibilidad y trazabilidad a los clientes de INTER.MX durante el proceso de reporte y seguimiento de siniestros. 
 
-## 🎯 Objetivo del Proyecto
+## Objetivo del Proyecto
 Resolver la incertidumbre del cliente y reducir la saturación operativa de los ejecutivos al permitir:
 - Autogestión y disponibilidad 24/7.
 - Visualización interactiva del estatus del siniestro.
 - Carga guiada de documentos directamente en la plataforma.
 
-## 🛠️ Stack Tecnológico
+## Stack Tecnológico
 Este proyecto utiliza una arquitectura full-stack orientada al alto rendimiento y despliegue autogestionado:
 
 * **Frontend:** React + Vite + Tailwind CSS
@@ -22,7 +22,7 @@ El proyecto está dividido en dos directorios principales para separar las respo
 * `/frontend`: Contiene la aplicación cliente (Interfaz de usuario).
 * `/backend`: Contiene la API, la lógica de negocio y la conexión a la base de datos.
 
-## 🚀 Instalación y Desarrollo (Local)
+## Instalación y Desarrollo (Local)
 
 ### Requisitos previos
 - Node.js (v18+)
