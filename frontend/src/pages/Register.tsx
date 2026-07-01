@@ -1,40 +1,42 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../services/api';
-import type { Rol } from '../types';
+import { extractErrorMessage } from '../utils/errors';
 import FloatingInput from '../components/FloatingInput';
 import PasswordInput from '../components/PasswordInput';
 
-const DASHBOARD_PATH: Record<Rol, string> = {
-  ADMIN: '/admin',
-  AJUSTADOR: '/ajustador',
-  CLIENTE: '/cliente',
-};
-
 const HIGHLIGHTS = [
-  { title: 'Trazabilidad total', desc: 'Cada cambio de estatus queda registrado y notificado.' },
-  { title: 'Gestión centralizada', desc: 'Ajustadores, clientes y administradores en un solo lugar.' },
-  { title: 'Seguridad enterprise', desc: 'Autenticación JWT y control de acceso por rol.' },
+  { title: 'Reporta en minutos', desc: 'Abre un caso nuevo y te asignamos un ajustador al instante.' },
+  { title: 'Sigue tu caso 24/7', desc: 'Consulta el historial y el estatus desde cualquier dispositivo.' },
+  { title: 'Tus documentos, seguros', desc: 'Sube evidencias y dales seguimiento hasta su aprobación.' },
 ];
 
-export default function Login() {
+export default function Register() {
   const navigate = useNavigate();
+  const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const { data } = await authApi.login(email, password);
+      const { data } = await authApi.register({ nombre, email, password });
       localStorage.setItem('token', data.accessToken);
       localStorage.setItem('user', JSON.stringify(data.user));
-      navigate(DASHBOARD_PATH[data.user.rol], { replace: true });
-    } catch {
-      setError('Correo o contraseña incorrectos. Verifica tus datos.');
+      navigate('/cliente', { replace: true });
+    } catch (err) {
+      setError(extractErrorMessage(err, 'No se pudo crear tu cuenta. Intenta de nuevo.'));
     } finally {
       setLoading(false);
     }
@@ -60,7 +62,7 @@ export default function Login() {
 
           <div>
             <h2 className="text-3xl font-bold leading-tight mb-4 max-w-md">
-              La forma más clara de gestionar siniestros, de principio a fin.
+              Crea tu cuenta y da seguimiento a tu siniestro paso a paso.
             </h2>
             <div className="space-y-4 mt-10">
               {HIGHLIGHTS.map((h) => (
@@ -89,10 +91,18 @@ export default function Login() {
           </div>
 
           <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl shadow-slate-200/60 border border-white/60 p-8">
-            <h1 className="text-2xl font-bold text-slate-900 mb-1">Bienvenido de nuevo</h1>
-            <p className="text-sm text-slate-500 mb-8">Inicia sesión para continuar con tu cuenta</p>
+            <h1 className="text-2xl font-bold text-slate-900 mb-1">Crea tu cuenta</h1>
+            <p className="text-sm text-slate-500 mb-8">Regístrate para reportar y dar seguimiento a tus siniestros</p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              <FloatingInput
+                label="Nombre completo"
+                required
+                autoComplete="name"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+              />
+
               <FloatingInput
                 label="Correo electrónico"
                 type="email"
@@ -105,9 +115,17 @@ export default function Login() {
               <PasswordInput
                 label="Contraseña"
                 required
-                autoComplete="current-password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+              />
+
+              <PasswordInput
+                label="Confirmar contraseña"
+                required
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
               />
 
               {error && (
@@ -124,18 +142,18 @@ export default function Login() {
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    Ingresando...
+                    Creando cuenta...
                   </span>
                 ) : (
-                  'Iniciar sesión'
+                  'Crear cuenta'
                 )}
               </button>
             </form>
 
             <p className="text-sm text-center text-slate-500 mt-6">
-              ¿No tienes cuenta?{' '}
-              <Link to="/register" className="text-indigo-600 font-semibold hover:text-indigo-800">
-                Regístrate
+              ¿Ya tienes cuenta?{' '}
+              <Link to="/login" className="text-indigo-600 font-semibold hover:text-indigo-800">
+                Inicia sesión
               </Link>
             </p>
           </div>

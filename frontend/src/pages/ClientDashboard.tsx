@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { documentosApi, siniestrosApi } from '../services/api';
-import type { EstatusSiniestro, Siniestro, SiniestroDetalle } from '../types';
+import type { Documento, EstatusSiniestro, Siniestro, SiniestroDetalle } from '../types';
+import { extractErrorMessage } from '../utils/errors';
 import StatusBadge from '../components/StatusBadge';
 import DocumentoCard from '../components/DocumentoCard';
 import DropzoneUpload from '../components/DropzoneUpload';
+import ReportarSiniestroModal from '../components/ReportarSiniestroModal';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { PlusIcon } from '../components/icons';
 
 const ESTATUS_LABEL: Record<EstatusSiniestro, string> = {
   REPORTADO: 'Reportado',
@@ -32,13 +36,6 @@ function fmtHora(iso: string) {
   });
 }
 
-function extractErrorMessage(err: unknown, fallback: string): string {
-  const message = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
-  if (Array.isArray(message)) return message[0] ?? fallback;
-  if (typeof message === 'string') return message;
-  return fallback;
-}
-
 export default function ClientDashboard() {
   const [siniestros, setSiniestros] = useState<Siniestro[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,16 +43,27 @@ export default function ClientDashboard() {
   const [subTab, setSubTab] = useState<SubTab>('historial');
   const [detalle, setDetalle] = useState<SiniestroDetalle | null>(null);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
   const [tipoDocumento, setTipoDocumento] = useState('EVIDENCIA');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
 
-  useEffect(() => {
-    siniestrosApi.getAll()
-      .then(({ data }) => setSiniestros(data))
-      .finally(() => setLoading(false));
-  }, []);
+  const [deleteDocTarget, setDeleteDocTarget] = useState<Documento | null>(null);
+  const [deletingDoc, setDeletingDoc] = useState(false);
+  const [deleteDocError, setDeleteDocError] = useState('');
+
+  async function fetchSiniestros() {
+    setLoading(true);
+    try {
+      const { data } = await siniestrosApi.getAll();
+      setSiniestros(data);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { fetchSiniestros(); }, []);
 
   async function toggleDetalle(id: string) {
     if (expandedId === id) {
@@ -93,11 +101,38 @@ export default function ClientDashboard() {
     }
   }
 
+  async function handleDeleteDoc() {
+    if (!deleteDocTarget || !detalle) return;
+    setDeletingDoc(true);
+    setDeleteDocError('');
+    try {
+      await documentosApi.remove(deleteDocTarget.id);
+      const { data } = await siniestrosApi.getOne(detalle.id);
+      setDetalle(data);
+      setSiniestros((prev) =>
+        prev.map((s) => (s.id === detalle.id ? { ...s, _count: { ...s._count, documentos: s._count.documentos - 1 } } : s)),
+      );
+      setDeleteDocTarget(null);
+    } catch (err) {
+      setDeleteDocError(extractErrorMessage(err, 'No se pudo eliminar el documento.'));
+    } finally {
+      setDeletingDoc(false);
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Mis Siniestros</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Seguimiento en tiempo real de tus casos</p>
+      <div className="flex items-start justify-between mb-6 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Mis Siniestros</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Seguimiento en tiempo real de tus casos</p>
+        </div>
+        <button
+          onClick={() => setReportModalOpen(true)}
+          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition-colors shadow-sm shrink-0"
+        >
+          <PlusIcon className="w-4 h-4" /> Reportar siniestro
+        </button>
       </div>
 
       {loading ? (
@@ -105,7 +140,7 @@ export default function ClientDashboard() {
       ) : siniestros.length === 0 ? (
         <div className="text-center py-16 text-slate-400 bg-white rounded-2xl border border-slate-200">
           No tienes siniestros registrados.<br />
-          <span className="text-sm">Contacta a tu ajustador para abrir un caso.</span>
+          <span className="text-sm">Reporta tu primer caso con el botón de arriba.</span>
         </div>
       ) : (
         <div className="space-y-3">
@@ -195,7 +230,12 @@ export default function ClientDashboard() {
                           {detalle.documentos.length > 0 && (
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                               {detalle.documentos.map((doc) => (
-                                <DocumentoCard key={doc.id} documento={doc} />
+                                <DocumentoCard
+                                  key={doc.id}
+                                  documento={doc}
+                                  canDelete
+                                  onDelete={() => { setDeleteDocTarget(doc); setDeleteDocError(''); }}
+                                />
                               ))}
                             </div>
                           )}
@@ -229,6 +269,26 @@ export default function ClientDashboard() {
             </div>
           ))}
         </div>
+      )}
+
+      {reportModalOpen && (
+        <ReportarSiniestroModal
+          onClose={() => setReportModalOpen(false)}
+          onCreated={() => { setReportModalOpen(false); fetchSiniestros(); }}
+        />
+      )}
+
+      {deleteDocTarget && (
+        <ConfirmDialog
+          title="Eliminar documento"
+          message={`¿Seguro que quieres eliminar "${deleteDocTarget.tipo}"? Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar"
+          danger
+          loading={deletingDoc}
+          error={deleteDocError}
+          onConfirm={handleDeleteDoc}
+          onCancel={() => setDeleteDocTarget(null)}
+        />
       )}
     </div>
   );

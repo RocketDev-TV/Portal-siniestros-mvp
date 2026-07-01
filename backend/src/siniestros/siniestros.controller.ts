@@ -24,9 +24,9 @@ export class SiniestrosController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles(Rol.ADMIN, Rol.AJUSTADOR)
+  @Roles(Rol.ADMIN, Rol.AJUSTADOR, Rol.CLIENTE)
   create(@Body() dto: CreateSiniestroDto, @Request() req: any) {
-    return this.siniestrosService.create(dto, req.user.id);
+    return this.siniestrosService.create(dto, req.user);
   }
 
   @Patch(':id/estatus')

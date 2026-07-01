@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { resolveFileUrl } from '../services/api';
 import type { Documento, EstatusDocumento } from '../types';
-import { CheckCircleIcon, DocumentIcon, XCircleIcon } from './icons';
+import { CheckCircleIcon, DocumentIcon, TrashIcon, XCircleIcon } from './icons';
+import DocumentPreviewModal from './DocumentPreviewModal';
 
 interface DocumentoCardProps {
   documento: Documento;
@@ -8,6 +10,8 @@ interface DocumentoCardProps {
   onApprove?: () => void;
   onReject?: () => void;
   updating?: boolean;
+  canDelete?: boolean;
+  onDelete?: () => void;
 }
 
 const ESTATUS_STYLE: Record<EstatusDocumento, string> = {
@@ -30,28 +34,40 @@ function fmt(iso: string) {
   return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-export default function DocumentoCard({ documento, canValidate, onApprove, onReject, updating }: DocumentoCardProps) {
+export default function DocumentoCard({
+  documento,
+  canValidate,
+  onApprove,
+  onReject,
+  updating,
+  canDelete,
+  onDelete,
+}: DocumentoCardProps) {
+  const [previewOpen, setPreviewOpen] = useState(false);
   const fileUrl = resolveFileUrl(documento.urlArchivo);
   const image = isImage(documento.urlArchivo);
+  const showDelete = canDelete && documento.estatus === 'PENDIENTE';
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-      <a
-        href={fileUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="block bg-slate-50 h-28 flex items-center justify-center overflow-hidden"
+      <button
+        type="button"
+        onClick={() => setPreviewOpen(true)}
+        className="w-full bg-slate-50 h-28 flex items-center justify-center overflow-hidden cursor-zoom-in"
+        aria-label="Ver documento"
       >
         {image ? (
           <img src={fileUrl} alt={documento.tipo} className="w-full h-full object-cover" />
         ) : (
           <DocumentIcon className="w-10 h-10 text-slate-300" />
         )}
-      </a>
+      </button>
       <div className="p-3">
         <div className="flex items-center justify-between gap-2 mb-1">
           <span className="text-xs font-semibold text-slate-700 truncate">{documento.tipo}</span>
-          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${ESTATUS_STYLE[documento.estatus]}`}>
+          <span
+            className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap ${ESTATUS_STYLE[documento.estatus]}`}
+          >
             {ESTATUS_LABEL[documento.estatus]}
           </span>
         </div>
@@ -78,7 +94,18 @@ export default function DocumentoCard({ documento, canValidate, onApprove, onRej
             </button>
           </div>
         )}
+
+        {showDelete && (
+          <button
+            onClick={onDelete}
+            className="w-full flex items-center justify-center gap-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg py-1.5 mt-2.5 transition-colors"
+          >
+            <TrashIcon className="w-3.5 h-3.5" /> Eliminar
+          </button>
+        )}
       </div>
+
+      {previewOpen && <DocumentPreviewModal documento={documento} onClose={() => setPreviewOpen(false)} />}
     </div>
   );
 }

@@ -16,7 +16,7 @@ export function statusLabel(estatus: EstatusSiniestro): string {
 export default function StatusBadge({ estatus }: { estatus: EstatusSiniestro }) {
   const { label, className } = CONFIG[estatus] ?? { label: estatus, className: 'bg-slate-100 text-slate-600' };
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${className}`}>
+    <span className={`inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
       {label}
     </span>
   );

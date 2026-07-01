@@ -46,6 +46,18 @@ export interface UpdateUserPayload {
   nombre?: string;
   email?: string;
   rol?: Rol;
+  password?: string;
+}
+
+export interface RegisterPayload {
+  nombre: string;
+  email: string;
+  password: string;
+}
+
+export interface CreateSiniestroPayload {
+  descripcion: string;
+  fechaFalla?: string;
 }
 
 export interface UserBasic {

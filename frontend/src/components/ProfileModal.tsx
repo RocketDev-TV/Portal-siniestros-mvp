@@ -4,6 +4,7 @@ import type { AuthUser } from '../types';
 import FloatingInput from './FloatingInput';
 import PasswordInput from './PasswordInput';
 import { CheckCircleIcon, CloseIcon, LockClosedIcon, UserCircleIcon } from './icons';
+import { extractErrorMessage } from '../utils/errors';
 
 interface ProfileModalProps {
   user: AuthUser;
@@ -12,13 +13,6 @@ interface ProfileModalProps {
 }
 
 type Tab = 'datos' | 'seguridad';
-
-function extractErrorMessage(err: unknown, fallback: string): string {
-  const message = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
-  if (Array.isArray(message)) return message[0] ?? fallback;
-  if (typeof message === 'string') return message;
-  return fallback;
-}
 
 export default function ProfileModal({ user, onClose, onUpdated }: ProfileModalProps) {
   const [tab, setTab] = useState<Tab>('datos');

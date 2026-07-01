@@ -4,6 +4,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   danger?: boolean;
   loading?: boolean;
+  error?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -14,6 +15,7 @@ export default function ConfirmDialog({
   confirmLabel = 'Confirmar',
   danger = false,
   loading = false,
+  error,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -28,6 +30,10 @@ export default function ConfirmDialog({
       >
         <h3 className="text-base font-bold text-slate-900 mb-2">{title}</h3>
         <p className="text-sm text-slate-500 leading-relaxed">{message}</p>
+
+        {error && (
+          <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5 mt-3">{error}</p>
+        )}
 
         <div className="flex gap-3 mt-6">
           <button

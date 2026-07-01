@@ -51,7 +51,13 @@ export class SiniestrosService {
     return siniestro;
   }
 
-  async create(dto: CreateSiniestroDto, userId: string) {
+  async create(dto: CreateSiniestroDto, user: ReqUser) {
+    const clienteId = user.rol === Rol.CLIENTE ? user.id : dto.clienteId;
+    if (!clienteId) throw new BadRequestException('El cliente es obligatorio');
+
+    const ajustadorId =
+      user.rol === Rol.CLIENTE ? await this.asignarAjustadorAutomatico() : (dto.ajustadorId ?? null);
+
     const count = await this.prisma.siniestro.count();
     const folio = `SIN-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
 
@@ -60,14 +66,14 @@ export class SiniestrosService {
         data: {
           folio,
           descripcion: dto.descripcion,
-          clienteId: dto.clienteId,
-          ajustadorId: dto.ajustadorId ?? null,
+          clienteId,
+          ajustadorId,
           fechaFalla: dto.fechaFalla ? new Date(dto.fechaFalla) : null,
           historial: {
             create: {
               estatusNuevo: 'REPORTADO',
               comentario: 'Siniestro registrado en el sistema',
-              cambiadoPorId: userId,
+              cambiadoPorId: user.id,
             },
           },
         },
@@ -84,6 +90,26 @@ export class SiniestrosService {
       }
       throw e;
     }
+  }
+
+  /** Asigna el ajustador con menos siniestros activos (no finalizados ni rechazados). */
+  private async asignarAjustadorAutomatico(): Promise<string | null> {
+    const ajustadores = await this.prisma.user.findMany({
+      where: { rol: Rol.AJUSTADOR },
+      select: {
+        id: true,
+        siniestrosAsignados: { select: { estatus: true } },
+      },
+    });
+
+    if (ajustadores.length === 0) return null;
+
+    function casosActivos(ajustador: (typeof ajustadores)[number]) {
+      return ajustador.siniestrosAsignados.filter((s) => s.estatus !== 'FINALIZADO' && s.estatus !== 'RECHAZADO')
+        .length;
+    }
+
+    return ajustadores.reduce((min, actual) => (casosActivos(actual) < casosActivos(min) ? actual : min)).id;
   }
 
   async updateEstatus(id: string, dto: UpdateEstatusDto, user: ReqUser) {

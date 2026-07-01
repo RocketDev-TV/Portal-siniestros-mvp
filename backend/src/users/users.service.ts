@@ -90,10 +90,15 @@ export class UsersService {
       }
     }
 
+    const data: Prisma.UserUpdateInput = { nombre: dto.nombre, email: dto.email, rol: dto.rol };
+    if (dto.password) {
+      data.password = await bcrypt.hash(dto.password, 10);
+    }
+
     try {
       return await this.prisma.user.update({
         where: { id },
-        data: dto,
+        data,
         select: PROFILE_SELECT,
       });
     } catch (e) {

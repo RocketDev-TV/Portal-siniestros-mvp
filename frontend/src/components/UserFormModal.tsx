@@ -4,6 +4,7 @@ import type { CreateUserPayload, Rol, UpdateUserPayload, UserAdmin } from '../ty
 import FloatingInput from './FloatingInput';
 import PasswordInput from './PasswordInput';
 import { CloseIcon } from './icons';
+import { extractErrorMessage } from '../utils/errors';
 
 interface UserFormModalProps {
   user: UserAdmin | null;
@@ -16,13 +17,6 @@ const ROL_OPTIONS: { value: Rol; label: string }[] = [
   { value: 'AJUSTADOR', label: 'Ajustador' },
   { value: 'ADMIN', label: 'Administrador' },
 ];
-
-function extractErrorMessage(err: unknown, fallback: string): string {
-  const message = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
-  if (Array.isArray(message)) return message[0] ?? fallback;
-  if (typeof message === 'string') return message;
-  return fallback;
-}
 
 export default function UserFormModal({ user, onClose, onSaved }: UserFormModalProps) {
   const isEdit = !!user;
@@ -40,6 +34,7 @@ export default function UserFormModal({ user, onClose, onSaved }: UserFormModalP
     try {
       if (isEdit) {
         const payload: UpdateUserPayload = { nombre, email, rol };
+        if (password) payload.password = password;
         await adminUsersApi.update(user.id, payload);
       } else {
         const payload: CreateUserPayload = { nombre, email, password, rol };
@@ -82,14 +77,15 @@ export default function UserFormModal({ user, onClose, onSaved }: UserFormModalP
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          {!isEdit && (
-            <PasswordInput
-              label="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
-              required
-            />
+          <PasswordInput
+            label={isEdit ? 'Nueva contraseña (opcional)' : 'Contraseña'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+            required={!isEdit}
+          />
+          {isEdit && (
+            <p className="text-xs text-slate-400 -mt-2.5">Déjalo en blanco para no cambiar la contraseña actual.</p>
           )}
 
           <div>

@@ -3,6 +3,7 @@ import type { AuthUser, Rol } from './types';
 import AuthLayout from './layouts/AuthLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
 import AjustadorDashboard from './pages/AjustadorDashboard';
 import ClientDashboard from './pages/ClientDashboard';
@@ -41,6 +42,7 @@ export default function App() {
       <Routes>
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRol="ADMIN" />}>

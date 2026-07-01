@@ -5,9 +5,9 @@ export class CreateSiniestroDto {
   @IsNotEmpty({ message: 'La descripción es obligatoria' })
   descripcion!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'El cliente es obligatorio' })
-  clienteId!: string;
+  clienteId?: string;
 
   @IsOptional()
   @IsString()

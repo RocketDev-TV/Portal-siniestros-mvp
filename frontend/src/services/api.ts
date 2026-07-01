@@ -2,10 +2,12 @@ import axios from 'axios';
 import type {
   AuthUser,
   ChangePasswordPayload,
+  CreateSiniestroPayload,
   CreateUserPayload,
   Documento,
   EstatusDocumento,
   EstatusSiniestro,
+  RegisterPayload,
   Siniestro,
   SiniestroDetalle,
   UpdateProfilePayload,
@@ -43,6 +45,8 @@ api.interceptors.response.use(
 export const authApi = {
   login: (email: string, password: string) =>
     api.post<{ accessToken: string; user: AuthUser }>('/auth/login', { email, password }),
+  register: (data: RegisterPayload) =>
+    api.post<{ accessToken: string; user: AuthUser }>('/auth/register', data),
 };
 
 export const usersApi = {
@@ -62,6 +66,7 @@ export const adminUsersApi = {
 export const siniestrosApi = {
   getAll: () => api.get<Siniestro[]>('/siniestros'),
   getOne: (id: string) => api.get<SiniestroDetalle>(`/siniestros/${id}`),
+  create: (data: CreateSiniestroPayload) => api.post<Siniestro>('/siniestros', data),
   updateEstatus: (id: string, nuevoEstatus: EstatusSiniestro, comentario?: string) =>
     api.patch<SiniestroDetalle>(`/siniestros/${id}/estatus`, { nuevoEstatus, comentario }),
 };
@@ -76,6 +81,7 @@ export const documentosApi = {
   },
   updateEstatus: (id: string, estatus: EstatusDocumento, comentario?: string) =>
     api.patch<Documento>(`/documentos/${id}/estatus`, { estatus, comentario }),
+  remove: (id: string) => api.delete<{ message: string }>(`/documentos/${id}`),
 };
 
 export default api;

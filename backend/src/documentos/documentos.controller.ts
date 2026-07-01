@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Param, Patch, Post, Request, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Param, Patch, Post, Request, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Rol } from '@prisma/client';
 import { randomUUID } from 'crypto';
@@ -46,5 +46,12 @@ export class DocumentosController {
   @Roles(Rol.ADMIN, Rol.AJUSTADOR)
   updateEstatus(@Param('id') id: string, @Body() dto: UpdateDocumentoEstatusDto, @Request() req: any) {
     return this.documentosService.updateEstatus(id, dto, req.user);
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Rol.CLIENTE)
+  remove(@Param('id') id: string, @Request() req: any) {
+    return this.documentosService.remove(id, req.user);
   }
 }
