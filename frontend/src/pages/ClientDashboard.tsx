@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { siniestrosApi } from '../services/api';
+import { documentosApi, siniestrosApi } from '../services/api';
 import type { EstatusSiniestro, Siniestro, SiniestroDetalle } from '../types';
 import StatusBadge from '../components/StatusBadge';
+import DocumentoCard from '../components/DocumentoCard';
+import DropzoneUpload from '../components/DropzoneUpload';
 
 const ESTATUS_LABEL: Record<EstatusSiniestro, string> = {
   REPORTADO: 'Reportado',
@@ -11,6 +13,14 @@ const ESTATUS_LABEL: Record<EstatusSiniestro, string> = {
   RECHAZADO: 'Rechazado',
   FINALIZADO: 'Finalizado',
 };
+
+const TIPO_DOCUMENTO_OPTIONS = [
+  { value: 'EVIDENCIA', label: 'Evidencia del siniestro' },
+  { value: 'POLIZA', label: 'Póliza' },
+  { value: 'IDENTIFICACION', label: 'Identificación oficial' },
+];
+
+type SubTab = 'historial' | 'documentos';
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -22,12 +32,24 @@ function fmtHora(iso: string) {
   });
 }
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+  const message = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
+  if (Array.isArray(message)) return message[0] ?? fallback;
+  if (typeof message === 'string') return message;
+  return fallback;
+}
+
 export default function ClientDashboard() {
   const [siniestros, setSiniestros] = useState<Siniestro[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [subTab, setSubTab] = useState<SubTab>('historial');
   const [detalle, setDetalle] = useState<SiniestroDetalle | null>(null);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
+
+  const [tipoDocumento, setTipoDocumento] = useState('EVIDENCIA');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   useEffect(() => {
     siniestrosApi.getAll()
@@ -42,13 +64,32 @@ export default function ClientDashboard() {
       return;
     }
     setExpandedId(id);
+    setSubTab('historial');
     setDetalle(null);
+    setUploadError('');
     setLoadingDetalle(true);
     try {
       const { data } = await siniestrosApi.getOne(id);
       setDetalle(data);
     } finally {
       setLoadingDetalle(false);
+    }
+  }
+
+  async function handleUpload(siniestroId: string, file: File) {
+    setUploading(true);
+    setUploadError('');
+    try {
+      await documentosApi.upload(siniestroId, tipoDocumento, file);
+      const { data } = await siniestrosApi.getOne(siniestroId);
+      setDetalle(data);
+      setSiniestros((prev) =>
+        prev.map((s) => (s.id === siniestroId ? { ...s, _count: { ...s._count, documentos: s._count.documentos + 1 } } : s)),
+      );
+    } catch (err) {
+      setUploadError(extractErrorMessage(err, 'No se pudo subir el archivo.'));
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -83,55 +124,106 @@ export default function ClientDashboard() {
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5 text-xs text-slate-400">
                       <span>Reportado el {fmt(s.fechaReporte)}</span>
                       {s.ajustador && <span>Ajustador: {s.ajustador.nombre}</span>}
-                      <span>{s._count.historial} cambio{s._count.historial !== 1 ? 's' : ''}</span>
+                      <span>{s._count.documentos} documento{s._count.documentos !== 1 ? 's' : ''}</span>
                     </div>
                   </div>
                   <button
                     onClick={() => toggleDetalle(s.id)}
                     className="flex-shrink-0 text-xs text-indigo-600 hover:text-indigo-800 font-semibold border border-indigo-200 rounded-xl px-3 py-1.5 hover:bg-indigo-50 transition-colors"
                   >
-                    {expandedId === s.id ? 'Ocultar ↑' : 'Ver historial ↓'}
+                    {expandedId === s.id ? 'Ocultar ↑' : 'Ver detalle ↓'}
                   </button>
                 </div>
               </div>
 
               {expandedId === s.id && (
-                <div className="border-t border-slate-100 bg-slate-50/80 px-5 py-4">
-                  {loadingDetalle && !detalle ? (
-                    <p className="text-sm text-slate-400 text-center py-3">Cargando historial...</p>
-                  ) : detalle && detalle.id === s.id ? (
-                    <div>
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-4">
-                        Historial de cambios
-                      </p>
-                      <div className="relative">
-                        <div className="absolute left-[11px] top-2 bottom-2 w-px bg-slate-200" />
-                        <div className="space-y-5">
-                          {detalle.historial.map((h, idx) => (
-                            <div key={h.id} className="pl-7 relative">
-                              <div className={`absolute left-0 top-1.5 w-[22px] h-[22px] rounded-full border-2 border-white shadow flex items-center justify-center text-white text-[10px] font-bold ${idx === detalle.historial.length - 1 ? 'bg-indigo-500' : 'bg-slate-300'}`}>
-                                {idx + 1}
-                              </div>
-                              <p className="text-[11px] text-slate-400 mb-0.5">{fmtHora(h.fechaCambio)}</p>
-                              <p className="text-sm font-semibold text-slate-800">
-                                {h.estatusAnterior
-                                  ? `${ESTATUS_LABEL[h.estatusAnterior]} → ${ESTATUS_LABEL[h.estatusNuevo]}`
-                                  : ESTATUS_LABEL[h.estatusNuevo]}
-                              </p>
-                              {h.comentario && (
-                                <p className="text-sm text-slate-600 mt-1 bg-white rounded-xl px-3 py-2 border border-slate-100 leading-relaxed">
-                                  "{h.comentario}"
+                <div className="border-t border-slate-100 bg-slate-50/80">
+                  <div className="flex px-5 pt-3 gap-1 border-b border-slate-200/70">
+                    <button
+                      onClick={() => setSubTab('historial')}
+                      className={`px-3 py-2 text-xs font-semibold uppercase tracking-wide border-b-2 transition-colors ${
+                        subTab === 'historial' ? 'text-indigo-600 border-indigo-600' : 'text-slate-400 border-transparent hover:text-slate-600'
+                      }`}
+                    >
+                      Historial
+                    </button>
+                    <button
+                      onClick={() => setSubTab('documentos')}
+                      className={`px-3 py-2 text-xs font-semibold uppercase tracking-wide border-b-2 transition-colors ${
+                        subTab === 'documentos' ? 'text-indigo-600 border-indigo-600' : 'text-slate-400 border-transparent hover:text-slate-600'
+                      }`}
+                    >
+                      Documentos
+                    </button>
+                  </div>
+
+                  <div className="px-5 py-4">
+                    {loadingDetalle && !detalle ? (
+                      <p className="text-sm text-slate-400 text-center py-3">Cargando...</p>
+                    ) : detalle && detalle.id === s.id ? (
+                      subTab === 'historial' ? (
+                        <div className="relative">
+                          <div className="absolute left-[11px] top-2 bottom-2 w-px bg-slate-200" />
+                          <div className="space-y-5">
+                            {detalle.historial.map((h, idx) => (
+                              <div key={h.id} className="pl-7 relative">
+                                <div
+                                  className={`absolute left-0 top-1.5 w-[22px] h-[22px] rounded-full border-2 border-white shadow flex items-center justify-center text-white text-[10px] font-bold ${
+                                    idx === detalle.historial.length - 1 ? 'bg-indigo-500' : 'bg-slate-300'
+                                  }`}
+                                >
+                                  {idx + 1}
+                                </div>
+                                <p className="text-[11px] text-slate-400 mb-0.5">{fmtHora(h.fechaCambio)}</p>
+                                <p className="text-sm font-semibold text-slate-800">
+                                  {h.estatusAnterior
+                                    ? `${ESTATUS_LABEL[h.estatusAnterior]} → ${ESTATUS_LABEL[h.estatusNuevo]}`
+                                    : ESTATUS_LABEL[h.estatusNuevo]}
                                 </p>
-                              )}
-                              <p className="text-[11px] text-slate-400 mt-1">
-                                Actualizado por {h.cambiadoPor.nombre}
-                              </p>
-                            </div>
-                          ))}
+                                {h.comentario && (
+                                  <p className="text-sm text-slate-600 mt-1 bg-white rounded-xl px-3 py-2 border border-slate-100 leading-relaxed">
+                                    "{h.comentario}"
+                                  </p>
+                                )}
+                                <p className="text-[11px] text-slate-400 mt-1">Actualizado por {h.cambiadoPor.nombre}</p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ) : null}
+                      ) : (
+                        <div className="space-y-4">
+                          {detalle.documentos.length > 0 && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                              {detalle.documentos.map((doc) => (
+                                <DocumentoCard key={doc.id} documento={doc} />
+                              ))}
+                            </div>
+                          )}
+
+                          <div>
+                            <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5">
+                              Tipo de documento
+                            </label>
+                            <select
+                              value={tipoDocumento}
+                              onChange={(e) => setTipoDocumento(e.target.value)}
+                              className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-3"
+                            >
+                              {TIPO_DOCUMENTO_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                              ))}
+                            </select>
+                            <DropzoneUpload uploading={uploading} onFileSelected={(file) => handleUpload(s.id, file)} />
+                            {uploadError && (
+                              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-2">
+                                {uploadError}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    ) : null}
+                  </div>
                 </div>
               )}
             </div>

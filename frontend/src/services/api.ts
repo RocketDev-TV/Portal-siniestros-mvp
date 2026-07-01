@@ -1,7 +1,26 @@
 import axios from 'axios';
-import type { AuthUser, EstatusSiniestro, Siniestro, SiniestroDetalle } from '../types';
+import type {
+  AuthUser,
+  ChangePasswordPayload,
+  CreateUserPayload,
+  Documento,
+  EstatusDocumento,
+  EstatusSiniestro,
+  Siniestro,
+  SiniestroDetalle,
+  UpdateProfilePayload,
+  UpdateUserPayload,
+  UserAdmin,
+  UserProfile,
+} from '../types';
 
-const api = axios.create({ baseURL: 'http://localhost:3000' });
+export const API_BASE_URL = 'http://localhost:3000';
+
+const api = axios.create({ baseURL: API_BASE_URL });
+
+export function resolveFileUrl(urlArchivo: string) {
+  return `${API_BASE_URL}${urlArchivo}`;
+}
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -26,11 +45,37 @@ export const authApi = {
     api.post<{ accessToken: string; user: AuthUser }>('/auth/login', { email, password }),
 };
 
+export const usersApi = {
+  getMe: () => api.get<UserProfile>('/users/me'),
+  updateProfile: (data: UpdateProfilePayload) => api.patch<UserProfile>('/users/me', data),
+  changePassword: (data: ChangePasswordPayload) =>
+    api.patch<{ message: string }>('/users/me/password', data),
+};
+
+export const adminUsersApi = {
+  getAll: () => api.get<UserAdmin[]>('/users'),
+  create: (data: CreateUserPayload) => api.post<UserAdmin>('/users', data),
+  update: (id: string, data: UpdateUserPayload) => api.patch<UserAdmin>(`/users/${id}`, data),
+  remove: (id: string) => api.delete<{ message: string }>(`/users/${id}`),
+};
+
 export const siniestrosApi = {
   getAll: () => api.get<Siniestro[]>('/siniestros'),
   getOne: (id: string) => api.get<SiniestroDetalle>(`/siniestros/${id}`),
   updateEstatus: (id: string, nuevoEstatus: EstatusSiniestro, comentario?: string) =>
     api.patch<SiniestroDetalle>(`/siniestros/${id}/estatus`, { nuevoEstatus, comentario }),
+};
+
+export const documentosApi = {
+  upload: (siniestroId: string, tipo: string, file: File) => {
+    const formData = new FormData();
+    formData.append('siniestroId', siniestroId);
+    formData.append('tipo', tipo);
+    formData.append('file', file);
+    return api.post<Documento>('/documentos', formData);
+  },
+  updateEstatus: (id: string, estatus: EstatusDocumento, comentario?: string) =>
+    api.patch<Documento>(`/documentos/${id}/estatus`, { estatus, comentario }),
 };
 
 export default api;

@@ -8,11 +8,44 @@ export type EstatusSiniestro =
   | 'RECHAZADO'
   | 'FINALIZADO';
 
+export type EstatusDocumento = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+
 export interface AuthUser {
   id: string;
   email: string;
   nombre: string;
   rol: Rol;
+}
+
+export interface UserProfile extends AuthUser {
+  fechaCreacion: string;
+}
+
+export interface UpdateProfilePayload {
+  nombre?: string;
+  email?: string;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface UserAdmin extends UserProfile {
+  _count: { siniestrosCliente: number; siniestrosAsignados: number };
+}
+
+export interface CreateUserPayload {
+  nombre: string;
+  email: string;
+  password: string;
+  rol: Rol;
+}
+
+export interface UpdateUserPayload {
+  nombre?: string;
+  email?: string;
+  rol?: Rol;
 }
 
 export interface UserBasic {
@@ -42,12 +75,17 @@ export interface HistorialItem {
   cambiadoPor: { nombre: string; rol: Rol };
 }
 
+export interface Documento {
+  id: string;
+  tipo: string;
+  urlArchivo: string;
+  estatus: EstatusDocumento;
+  comentario: string | null;
+  fechaSubida: string;
+  siniestroId: string;
+}
+
 export interface SiniestroDetalle extends Omit<Siniestro, '_count'> {
-  documentos: Array<{
-    id: string;
-    tipo: string;
-    urlArchivo: string;
-    fechaSubida: string;
-  }>;
+  documentos: Documento[];
   historial: HistorialItem[];
 }

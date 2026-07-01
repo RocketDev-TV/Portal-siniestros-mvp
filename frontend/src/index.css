@@ -1,5 +1,35 @@
 @import "tailwindcss";
 
+@theme {
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-scale-in: scale-in 0.18s ease-out;
+  --animate-shake: shake 0.35s ease-in-out;
+  --animate-blob: blob 12s infinite ease-in-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(24px, -28px) scale(1.08); }
+  66% { transform: translate(-20px, 20px) scale(0.94); }
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }

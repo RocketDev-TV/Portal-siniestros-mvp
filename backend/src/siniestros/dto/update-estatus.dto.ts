@@ -1,6 +1,11 @@
 import { EstatusSiniestro } from '@prisma/client';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class UpdateEstatusDto {
-  nuevoEstatus: EstatusSiniestro;
+  @IsEnum(EstatusSiniestro, { message: 'Estatus inválido' })
+  nuevoEstatus!: EstatusSiniestro;
+
+  @IsOptional()
+  @IsString()
   comentario?: string;
 }

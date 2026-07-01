@@ -27,6 +27,12 @@ enum EstatusSiniestro {
   FINALIZADO
 }
 
+enum EstatusDocumento {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
 model User {
   id                  String             @id @default(uuid())
   email               String             @unique
@@ -62,13 +68,15 @@ model Siniestro {
 }
 
 model Documento {
-  id            String    @id @default(uuid())
+  id            String           @id @default(uuid())
   urlArchivo    String
-  tipo          String    // ej: "POLIZA", "IDENTIFICACION", "EVIDENCIA"
-  fechaSubida   DateTime  @default(now())
+  tipo          String           // ej: "POLIZA", "IDENTIFICACION", "EVIDENCIA"
+  estatus       EstatusDocumento @default(PENDIENTE)
+  comentario    String?
+  fechaSubida   DateTime         @default(now())
 
   siniestroId   String
-  siniestro     Siniestro @relation(fields: [siniestroId], references: [id])
+  siniestro     Siniestro        @relation(fields: [siniestroId], references: [id])
 }
 
 model HistorialEstatus {
