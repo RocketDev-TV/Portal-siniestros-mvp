@@ -38,9 +38,12 @@ model User {
   email               String             @unique
   password            String
   nombre              String
+  telefono            String?
   rol                 Rol                @default(CLIENTE)
+  isVerified          Boolean            @default(false)
+  verificationCode    String?
   fechaCreacion       DateTime           @default(now())
-  
+
   // Relaciones
   siniestrosCliente   Siniestro[]        @relation("ClienteSiniestros")
   siniestrosAsignados Siniestro[]        @relation("AjustadorSiniestros")

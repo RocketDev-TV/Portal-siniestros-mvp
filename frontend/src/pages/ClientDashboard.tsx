@@ -1,22 +1,14 @@
 import { useEffect, useState } from 'react';
 import { documentosApi, siniestrosApi } from '../services/api';
-import type { Documento, EstatusSiniestro, Siniestro, SiniestroDetalle } from '../types';
+import type { Documento, Siniestro, SiniestroDetalle } from '../types';
 import { extractErrorMessage } from '../utils/errors';
 import StatusBadge from '../components/StatusBadge';
 import DocumentoCard from '../components/DocumentoCard';
 import DropzoneUpload from '../components/DropzoneUpload';
+import HistorialTimeline from '../components/HistorialTimeline';
 import ReportarSiniestroModal from '../components/ReportarSiniestroModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { PlusIcon } from '../components/icons';
-
-const ESTATUS_LABEL: Record<EstatusSiniestro, string> = {
-  REPORTADO: 'Reportado',
-  EN_REVISION: 'En Revisión',
-  DOCUMENTOS_PENDIENTES: 'Docs. Pendientes',
-  APROBADO: 'Aprobado',
-  RECHAZADO: 'Rechazado',
-  FINALIZADO: 'Finalizado',
-};
 
 const TIPO_DOCUMENTO_OPTIONS = [
   { value: 'EVIDENCIA', label: 'Evidencia del siniestro' },
@@ -28,12 +20,6 @@ type SubTab = 'historial' | 'documentos';
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-function fmtHora(iso: string) {
-  return new Date(iso).toLocaleString('es-MX', {
-    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-  });
 }
 
 export default function ClientDashboard() {
@@ -158,9 +144,20 @@ export default function ClientDashboard() {
                     <p className="text-sm text-slate-700 leading-relaxed">{s.descripcion}</p>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5 text-xs text-slate-400">
                       <span>Reportado el {fmt(s.fechaReporte)}</span>
-                      {s.ajustador && <span>Ajustador: {s.ajustador.nombre}</span>}
                       <span>{s._count.documentos} documento{s._count.documentos !== 1 ? 's' : ''}</span>
                     </div>
+                    {s.ajustador && (
+                      <div className="mt-3 bg-indigo-50/60 border border-indigo-100 rounded-xl px-3 py-2">
+                        <p className="text-[11px] font-semibold text-indigo-700 uppercase tracking-wide mb-0.5">
+                          Tu ajustador asignado
+                        </p>
+                        <p className="text-sm text-slate-700 font-medium">{s.ajustador.nombre}</p>
+                        <div className="flex flex-wrap gap-x-3 text-xs text-slate-500 mt-0.5">
+                          <span>{s.ajustador.email}</span>
+                          {s.ajustador.telefono && <span>{s.ajustador.telefono}</span>}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => toggleDetalle(s.id)}
@@ -197,34 +194,7 @@ export default function ClientDashboard() {
                       <p className="text-sm text-slate-400 text-center py-3">Cargando...</p>
                     ) : detalle && detalle.id === s.id ? (
                       subTab === 'historial' ? (
-                        <div className="relative">
-                          <div className="absolute left-[11px] top-2 bottom-2 w-px bg-slate-200" />
-                          <div className="space-y-5">
-                            {detalle.historial.map((h, idx) => (
-                              <div key={h.id} className="pl-7 relative">
-                                <div
-                                  className={`absolute left-0 top-1.5 w-[22px] h-[22px] rounded-full border-2 border-white shadow flex items-center justify-center text-white text-[10px] font-bold ${
-                                    idx === detalle.historial.length - 1 ? 'bg-indigo-500' : 'bg-slate-300'
-                                  }`}
-                                >
-                                  {idx + 1}
-                                </div>
-                                <p className="text-[11px] text-slate-400 mb-0.5">{fmtHora(h.fechaCambio)}</p>
-                                <p className="text-sm font-semibold text-slate-800">
-                                  {h.estatusAnterior
-                                    ? `${ESTATUS_LABEL[h.estatusAnterior]} → ${ESTATUS_LABEL[h.estatusNuevo]}`
-                                    : ESTATUS_LABEL[h.estatusNuevo]}
-                                </p>
-                                {h.comentario && (
-                                  <p className="text-sm text-slate-600 mt-1 bg-white rounded-xl px-3 py-2 border border-slate-100 leading-relaxed">
-                                    "{h.comentario}"
-                                  </p>
-                                )}
-                                <p className="text-[11px] text-slate-400 mt-1">Actualizado por {h.cambiadoPor.nombre}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                        <HistorialTimeline historial={detalle.historial} />
                       ) : (
                         <div className="space-y-4">
                           {detalle.documentos.length > 0 && (

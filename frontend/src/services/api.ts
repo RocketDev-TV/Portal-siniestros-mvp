@@ -8,12 +8,14 @@ import type {
   EstatusDocumento,
   EstatusSiniestro,
   RegisterPayload,
+  RegisterResponse,
   Siniestro,
   SiniestroDetalle,
   UpdateProfilePayload,
   UpdateUserPayload,
   UserAdmin,
   UserProfile,
+  VerifyEmailPayload,
 } from '../types';
 
 export const API_BASE_URL = 'http://localhost:3000';
@@ -45,8 +47,9 @@ api.interceptors.response.use(
 export const authApi = {
   login: (email: string, password: string) =>
     api.post<{ accessToken: string; user: AuthUser }>('/auth/login', { email, password }),
-  register: (data: RegisterPayload) =>
-    api.post<{ accessToken: string; user: AuthUser }>('/auth/register', data),
+  register: (data: RegisterPayload) => api.post<RegisterResponse>('/auth/register', data),
+  verifyEmail: (data: VerifyEmailPayload) =>
+    api.post<{ accessToken: string; user: AuthUser }>('/auth/verify-email', data),
 };
 
 export const usersApi = {

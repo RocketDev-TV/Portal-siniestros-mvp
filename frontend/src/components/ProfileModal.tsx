@@ -19,6 +19,7 @@ export default function ProfileModal({ user, onClose, onUpdated }: ProfileModalP
 
   const [nombre, setNombre] = useState(user.nombre);
   const [email, setEmail] = useState(user.email);
+  const [telefono, setTelefono] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [profileSuccess, setProfileSuccess] = useState(false);
@@ -38,13 +39,17 @@ export default function ProfileModal({ user, onClose, onUpdated }: ProfileModalP
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  useEffect(() => {
+    usersApi.getMe().then(({ data }) => setTelefono(data.telefono ?? ''));
+  }, []);
+
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
     setProfileError('');
     setProfileSuccess(false);
     setSavingProfile(true);
     try {
-      const { data } = await usersApi.updateProfile({ nombre, email });
+      const { data } = await usersApi.updateProfile({ nombre, email, telefono });
       const updatedUser: AuthUser = { id: data.id, email: data.email, nombre: data.nombre, rol: data.rol };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       onUpdated(updatedUser);
@@ -138,6 +143,12 @@ export default function ProfileModal({ user, onClose, onUpdated }: ProfileModalP
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+              />
+              <FloatingInput
+                label="Teléfono (opcional)"
+                type="tel"
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
               />
 
               {profileError && (

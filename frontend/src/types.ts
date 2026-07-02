@@ -18,12 +18,15 @@ export interface AuthUser {
 }
 
 export interface UserProfile extends AuthUser {
+  telefono: string | null;
+  isVerified: boolean;
   fechaCreacion: string;
 }
 
 export interface UpdateProfilePayload {
   nombre?: string;
   email?: string;
+  telefono?: string;
 }
 
 export interface ChangePasswordPayload {
@@ -53,6 +56,17 @@ export interface RegisterPayload {
   nombre: string;
   email: string;
   password: string;
+  telefono?: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+  email: string;
+}
+
+export interface VerifyEmailPayload {
+  email: string;
+  code: string;
 }
 
 export interface CreateSiniestroPayload {
@@ -64,6 +78,7 @@ export interface UserBasic {
   id: string;
   nombre: string;
   email: string;
+  telefono: string | null;
 }
 
 export interface Siniestro {

@@ -21,8 +21,8 @@ export class SiniestrosService {
     return this.prisma.siniestro.findMany({
       where,
       include: {
-        cliente: { select: { id: true, nombre: true, email: true } },
-        ajustador: { select: { id: true, nombre: true, email: true } },
+        cliente: { select: { id: true, nombre: true, email: true, telefono: true } },
+        ajustador: { select: { id: true, nombre: true, email: true, telefono: true } },
         _count: { select: { documentos: true, historial: true } },
       },
       orderBy: { fechaReporte: 'desc' },
@@ -33,8 +33,8 @@ export class SiniestrosService {
     const siniestro = await this.prisma.siniestro.findUnique({
       where: { id },
       include: {
-        cliente: { select: { id: true, nombre: true, email: true } },
-        ajustador: { select: { id: true, nombre: true, email: true } },
+        cliente: { select: { id: true, nombre: true, email: true, telefono: true } },
+        ajustador: { select: { id: true, nombre: true, email: true, telefono: true } },
         documentos: true,
         historial: {
           include: { cambiadoPor: { select: { nombre: true, rol: true } } },
@@ -52,6 +52,10 @@ export class SiniestrosService {
   }
 
   async create(dto: CreateSiniestroDto, user: ReqUser) {
+    if (dto.fechaFalla && new Date(dto.fechaFalla) > new Date()) {
+      throw new BadRequestException('La fecha del siniestro no puede ser futura');
+    }
+
     const clienteId = user.rol === Rol.CLIENTE ? user.id : dto.clienteId;
     if (!clienteId) throw new BadRequestException('El cliente es obligatorio');
 

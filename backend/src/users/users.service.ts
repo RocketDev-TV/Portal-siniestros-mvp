@@ -11,7 +11,9 @@ const PROFILE_SELECT = {
   id: true,
   email: true,
   nombre: true,
+  telefono: true,
   rol: true,
+  isVerified: true,
   fechaCreacion: true,
 } as const;
 
@@ -39,7 +41,7 @@ export class UsersService {
 
     return this.prisma.user.update({
       where: { id: userId },
-      data: { nombre: dto.nombre, email: dto.email },
+      data: { nombre: dto.nombre, email: dto.email, telefono: dto.telefono },
       select: PROFILE_SELECT,
     });
   }
@@ -77,7 +79,7 @@ export class UsersService {
 
     const hashed = await bcrypt.hash(dto.password, 10);
     return this.prisma.user.create({
-      data: { nombre: dto.nombre, email: dto.email, password: hashed, rol: dto.rol },
+      data: { nombre: dto.nombre, email: dto.email, password: hashed, rol: dto.rol, isVerified: true },
       select: PROFILE_SELECT,
     });
   }

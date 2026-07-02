@@ -33,7 +33,12 @@ export default function Login() {
       localStorage.setItem('token', data.accessToken);
       localStorage.setItem('user', JSON.stringify(data.user));
       navigate(DASHBOARD_PATH[data.user.rol], { replace: true });
-    } catch {
+    } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 403) {
+        navigate('/verify-email', { state: { email } });
+        return;
+      }
       setError('Correo o contraseña incorrectos. Verifica tus datos.');
     } finally {
       setLoading(false);

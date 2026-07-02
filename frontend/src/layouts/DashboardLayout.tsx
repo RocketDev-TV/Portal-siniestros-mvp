@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import type { AuthUser } from '../types';
 import ProfileModal from '../components/ProfileModal';
 import RolBadge from '../components/RolBadge';
+import AppFooter from '../components/AppFooter';
 import { ChevronDownIcon } from '../components/icons';
 
 function getUser(): AuthUser | null {
@@ -86,6 +87,8 @@ export default function DashboardLayout() {
       <main className="flex-1 p-6">
         <Outlet />
       </main>
+
+      <AppFooter />
 
       {profileOpen && user && (
         <ProfileModal user={user} onClose={() => setProfileOpen(false)} onUpdated={setUser} />

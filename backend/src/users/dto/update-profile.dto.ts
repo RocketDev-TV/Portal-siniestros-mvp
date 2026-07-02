@@ -9,4 +9,8 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsEmail({}, { message: 'Ingresa un correo electrónico válido' })
   email?: string;
+
+  @IsOptional()
+  @IsString()
+  telefono?: string;
 }

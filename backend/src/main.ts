@@ -1,3 +1,14 @@
+/**
+ * Portal de Siniestros MVP — Punto de entrada del servidor (API)
+ * ---------------------------------------------------------------
+ * Autor:      Ignacio Ivan Herrera Gomez
+ * Copyright:  © 2026 Ignacio Ivan Herrera Gomez. Todos los derechos reservados.
+ * Licencia:   Software propietario. Queda prohibida la reproducción,
+ *             distribución, comunicación pública o modificación total o
+ *             parcial de este código sin autorización previa y por
+ *             escrito del autor.
+ * ---------------------------------------------------------------
+ */
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';

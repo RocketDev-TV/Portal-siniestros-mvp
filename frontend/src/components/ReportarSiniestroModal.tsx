@@ -8,6 +8,8 @@ interface ReportarSiniestroModalProps {
   onCreated: () => void;
 }
 
+const HOY = new Date().toISOString().slice(0, 10);
+
 export default function ReportarSiniestroModal({ onClose, onCreated }: ReportarSiniestroModalProps) {
   const [descripcion, setDescripcion] = useState('');
   const [fechaFalla, setFechaFalla] = useState('');
@@ -70,6 +72,7 @@ export default function ReportarSiniestroModal({ onClose, onCreated }: ReportarS
             <input
               type="date"
               value={fechaFalla}
+              max={HOY}
               onChange={(e) => setFechaFalla(e.target.value)}
               className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />

@@ -3,6 +3,7 @@ import { documentosApi, siniestrosApi } from '../services/api';
 import type { EstatusSiniestro, SiniestroDetalle } from '../types';
 import StatusBadge, { statusLabel } from './StatusBadge';
 import DocumentoCard from './DocumentoCard';
+import HistorialTimeline from './HistorialTimeline';
 import { CloseIcon } from './icons';
 
 const TODOS_ESTATUSES: EstatusSiniestro[] = [
@@ -89,7 +90,11 @@ export default function AjustadorCaseModal({ siniestroId, onClose, onUpdated }: 
                   <StatusBadge estatus={detalle.estatus} />
                 </div>
                 <p className="text-sm text-slate-600 max-w-md">{detalle.descripcion}</p>
-                <p className="text-xs text-slate-400 mt-1">Cliente: {detalle.cliente.nombre}</p>
+                <div className="flex flex-wrap gap-x-3 text-xs text-slate-400 mt-1">
+                  <span>Cliente: {detalle.cliente.nombre}</span>
+                  <span>{detalle.cliente.email}</span>
+                  {detalle.cliente.telefono && <span>{detalle.cliente.telefono}</span>}
+                </div>
               </div>
               <button
                 onClick={onClose}
@@ -123,6 +128,13 @@ export default function AjustadorCaseModal({ siniestroId, onClose, onUpdated }: 
                     ))}
                   </div>
                 )}
+              </section>
+
+              <section className="border-t border-slate-100 pt-5">
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                  Historial del caso
+                </h3>
+                <HistorialTimeline historial={detalle.historial} />
               </section>
 
               <section className="border-t border-slate-100 pt-5">

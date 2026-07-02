@@ -1,9 +1,21 @@
+/**
+ * Portal de Siniestros MVP — Frontend
+ * ---------------------------------------------------------------
+ * Autor:      Ignacio Ivan Herrera Gomez
+ * Copyright:  © 2026 Ignacio Ivan Herrera Gomez. Todos los derechos reservados.
+ * Licencia:   Software propietario. Queda prohibida la reproducción,
+ *             distribución, comunicación pública o modificación total o
+ *             parcial de este código sin autorización previa y por
+ *             escrito del autor.
+ * ---------------------------------------------------------------
+ */
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import type { AuthUser, Rol } from './types';
 import AuthLayout from './layouts/AuthLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 import AdminDashboard from './pages/AdminDashboard';
 import AjustadorDashboard from './pages/AjustadorDashboard';
 import ClientDashboard from './pages/ClientDashboard';
@@ -43,6 +55,7 @@ export default function App() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
         </Route>
 
         <Route element={<ProtectedRoute allowedRol="ADMIN" />}>

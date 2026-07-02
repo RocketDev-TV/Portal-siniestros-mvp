@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import { siniestrosApi } from '../services/api';
-import type { Siniestro } from '../types';
-import StatusBadge from '../components/StatusBadge';
+import type { EstatusSiniestro, Siniestro } from '../types';
+import StatusBadge, { statusLabel } from '../components/StatusBadge';
 import AjustadorCaseModal from '../components/AjustadorCaseModal';
+
+const TODOS_ESTATUSES: EstatusSiniestro[] = [
+  'REPORTADO', 'EN_REVISION', 'DOCUMENTOS_PENDIENTES', 'APROBADO', 'RECHAZADO', 'FINALIZADO',
+];
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -12,6 +16,7 @@ export default function AjustadorDashboard() {
   const [siniestros, setSiniestros] = useState<Siniestro[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
+  const [filtroEstatus, setFiltroEstatus] = useState<EstatusSiniestro | 'TODOS'>('TODOS');
 
   async function fetchSiniestros() {
     try {
@@ -24,8 +29,9 @@ export default function AjustadorDashboard() {
 
   useEffect(() => { fetchSiniestros(); }, []);
 
-  const activos = siniestros.filter((s) => s.estatus !== 'FINALIZADO' && s.estatus !== 'RECHAZADO');
-  const cerrados = siniestros.filter((s) => s.estatus === 'FINALIZADO' || s.estatus === 'RECHAZADO');
+  const listaFiltrada = filtroEstatus === 'TODOS' ? siniestros : siniestros.filter((s) => s.estatus === filtroEstatus);
+  const activos = listaFiltrada.filter((s) => s.estatus !== 'FINALIZADO' && s.estatus !== 'RECHAZADO');
+  const cerrados = listaFiltrada.filter((s) => s.estatus === 'FINALIZADO' || s.estatus === 'RECHAZADO');
 
   function renderTabla(lista: Siniestro[], atenuado = false) {
     return (
@@ -71,11 +77,28 @@ export default function AjustadorDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Mis Casos Asignados</h1>
-        <p className="text-sm text-slate-500 mt-0.5">
-          {activos.length} activos · {cerrados.length} cerrados
-        </p>
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Mis Casos Asignados</h1>
+          <p className="text-sm text-slate-500 mt-0.5">
+            {activos.length} activos · {cerrados.length} cerrados
+          </p>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5">
+            Filtrar por estatus
+          </label>
+          <select
+            value={filtroEstatus}
+            onChange={(e) => setFiltroEstatus(e.target.value as EstatusSiniestro | 'TODOS')}
+            className="border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="TODOS">Todos los estatus</option>
+            {TODOS_ESTATUSES.map((e) => (
+              <option key={e} value={e}>{statusLabel(e)}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading ? (
@@ -96,9 +119,9 @@ export default function AjustadorDashboard() {
             </section>
           )}
 
-          {siniestros.length === 0 && (
+          {listaFiltrada.length === 0 && (
             <div className="text-center py-14 text-slate-400 bg-white rounded-xl border border-slate-200">
-              No tienes casos asignados aún.
+              {siniestros.length === 0 ? 'No tienes casos asignados aún.' : 'No hay casos con ese estatus.'}
             </div>
           )}
         </div>

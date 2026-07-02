@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { adminUsersApi, siniestrosApi } from '../services/api';
 import type { EstatusSiniestro, Siniestro, UserAdmin } from '../types';
 import StatusBadge, { statusLabel } from '../components/StatusBadge';
@@ -29,6 +30,7 @@ export default function AdminDashboard() {
 
   const [siniestros, setSiniestros] = useState<Siniestro[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filtroEstatus, setFiltroEstatus] = useState<EstatusSiniestro | 'TODOS'>('TODOS');
   const [modal, setModal] = useState<ModalState | null>(null);
   const [nuevoEstatus, setNuevoEstatus] = useState<EstatusSiniestro>('EN_REVISION');
   const [comentario, setComentario] = useState('');
@@ -108,6 +110,26 @@ export default function AdminDashboard() {
   const cerrados = siniestros.filter((s) => s.estatus === 'FINALIZADO' || s.estatus === 'RECHAZADO');
   const pendientesDocs = siniestros.filter((s) => s.estatus === 'DOCUMENTOS_PENDIENTES');
 
+  const siniestrosFiltrados =
+    filtroEstatus === 'TODOS' ? siniestros : siniestros.filter((s) => s.estatus === filtroEstatus);
+
+  const casosPorEstatus = useMemo(
+    () => TODOS_ESTATUSES.map((e) => ({ estatus: statusLabel(e), cantidad: siniestros.filter((s) => s.estatus === e).length })),
+    [siniestros],
+  );
+
+  const rankingAjustadores = useMemo(() => {
+    const porAjustador = new Map<string, { nombre: string; cerrados: number; activos: number }>();
+    for (const s of siniestros) {
+      if (!s.ajustador) continue;
+      const entry = porAjustador.get(s.ajustador.id) ?? { nombre: s.ajustador.nombre, cerrados: 0, activos: 0 };
+      if (s.estatus === 'FINALIZADO' || s.estatus === 'RECHAZADO') entry.cerrados += 1;
+      else entry.activos += 1;
+      porAjustador.set(s.ajustador.id, entry);
+    }
+    return Array.from(porAjustador.values()).sort((a, b) => b.cerrados - a.cerrados);
+  }, [siniestros]);
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="flex items-start justify-between mb-6">
@@ -147,7 +169,64 @@ export default function AdminDashboard() {
         loading ? (
           <div className="text-center py-16 text-slate-400">Cargando siniestros...</div>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+              <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                <h2 className="text-sm font-semibold text-slate-700 mb-4">Casos por estatus</h2>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={casosPorEstatus} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="estatus" tick={{ fontSize: 11, fill: '#64748b' }} interval={0} angle={-15} textAnchor="end" height={50} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748b' }} />
+                    <Tooltip
+                      cursor={{ fill: '#eef2ff' }}
+                      contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }}
+                    />
+                    <Bar dataKey="cantidad" name="Casos" fill="#4f46e5" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                <h2 className="text-sm font-semibold text-slate-700 mb-4">Desempeño por ajustador</h2>
+                {rankingAjustadores.length === 0 ? (
+                  <p className="text-sm text-slate-400 text-center py-8">Aún no hay casos asignados.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {rankingAjustadores.map((a, idx) => (
+                      <div key={a.nombre} className="flex items-center gap-3 py-2 border-b border-slate-50 last:border-0">
+                        <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-xs font-bold flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span className="flex-1 min-w-0 text-sm text-slate-700 font-medium truncate">{a.nombre}</span>
+                        <span className="text-xs font-semibold text-green-700 bg-green-50 rounded-full px-2 py-0.5">
+                          {a.cerrados} cerrados
+                        </span>
+                        <span className="text-xs font-medium text-amber-700 bg-amber-50 rounded-full px-2 py-0.5">
+                          {a.activos} activos
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-slate-500">{siniestrosFiltrados.length} de {siniestros.length} siniestros</p>
+              <select
+                value={filtroEstatus}
+                onChange={(e) => setFiltroEstatus(e.target.value as EstatusSiniestro | 'TODOS')}
+                className="border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="TODOS">Todos los estatus</option>
+                {TODOS_ESTATUSES.map((e) => (
+                  <option key={e} value={e}>{statusLabel(e)}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-left">
@@ -161,7 +240,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {siniestros.map((s) => (
+                {siniestrosFiltrados.map((s) => (
                   <tr key={s.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3.5 font-mono font-semibold text-indigo-700 text-xs">{s.folio}</td>
                     <td className="px-4 py-3.5 text-slate-800">{s.cliente.nombre}</td>
@@ -181,15 +260,16 @@ export default function AdminDashboard() {
                     </td>
                   </tr>
                 ))}
-                {siniestros.length === 0 && (
+                {siniestrosFiltrados.length === 0 && (
                   <tr>
                     <td colSpan={7} className="text-center py-14 text-slate-400">
-                      No hay siniestros registrados aún.
+                      {siniestros.length === 0 ? 'No hay siniestros registrados aún.' : 'No hay siniestros con ese estatus.'}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         )
       )}

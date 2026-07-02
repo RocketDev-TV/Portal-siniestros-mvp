@@ -9,20 +9,41 @@ async function main() {
   // --- Usuarios ---
   const admin = await prisma.user.upsert({
     where: { email: 'admin@inter.mx' },
-    update: {},
-    create: { email: 'admin@inter.mx', password: hash, nombre: 'Administrador Maestro', rol: 'ADMIN' },
+    update: { isVerified: true },
+    create: {
+      email: 'admin@inter.mx',
+      password: hash,
+      nombre: 'Administrador Maestro',
+      rol: 'ADMIN',
+      telefono: '5500000001',
+      isVerified: true,
+    },
   });
 
   const ajustador = await prisma.user.upsert({
     where: { email: 'ajustador@inter.mx' },
-    update: {},
-    create: { email: 'ajustador@inter.mx', password: hash, nombre: 'Carlos Méndez', rol: 'AJUSTADOR' },
+    update: { isVerified: true },
+    create: {
+      email: 'ajustador@inter.mx',
+      password: hash,
+      nombre: 'Carlos Méndez',
+      rol: 'AJUSTADOR',
+      telefono: '5500000002',
+      isVerified: true,
+    },
   });
 
   const cliente = await prisma.user.upsert({
     where: { email: 'cliente@inter.mx' },
-    update: {},
-    create: { email: 'cliente@inter.mx', password: hash, nombre: 'María García', rol: 'CLIENTE' },
+    update: { isVerified: true },
+    create: {
+      email: 'cliente@inter.mx',
+      password: hash,
+      nombre: 'María García',
+      rol: 'CLIENTE',
+      telefono: '5500000003',
+      isVerified: true,
+    },
   });
 
   console.log('Usuarios creados:', { admin: admin.email, ajustador: ajustador.email, cliente: cliente.email });
