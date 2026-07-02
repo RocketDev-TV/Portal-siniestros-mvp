@@ -22,7 +22,8 @@ export default function Register() {
   const hasMinLength = password.length >= 6;
   const hasUpper = /[A-Z]/.test(password);
   const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-  const isPasswordValid = hasMinLength && hasUpper && hasSymbol;
+  const hasNumber = /\d/.test(password); // <-- NUEVA REGLA
+  const isPasswordValid = hasMinLength && hasUpper && hasSymbol && hasNumber;
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -151,6 +152,9 @@ export default function Register() {
                     </div>
                     <div className={`flex items-center gap-2 text-xs transition-colors ${hasSymbol ? 'text-green-600 font-medium' : 'text-slate-400'}`}>
                       <span className="text-lg leading-none">{hasSymbol ? '✓' : '•'}</span> Al menos un símbolo (ej. !@#$%)
+                    </div>
+                    <div className={`flex items-center gap-2 text-xs transition-colors ${hasNumber ? 'text-green-600 font-medium' : 'text-slate-400'}`}>
+                      <span className="text-lg leading-none">{hasNumber ? '✓' : '•'}</span> Al menos un número
                     </div>
                   </div>
                 )}

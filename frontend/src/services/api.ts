@@ -50,6 +50,8 @@ export const authApi = {
   register: (data: RegisterPayload) => api.post<RegisterResponse>('/auth/register', data),
   verifyEmail: (data: VerifyEmailPayload) =>
     api.post<{ accessToken: string; user: AuthUser }>('/auth/verify-email', data),
+  forgotPassword: (email: string) => api.post<{ message: string }>('/auth/forgot-password', { email }),
+  resetPassword: (token: string, password: string) => api.post<{ message: string }>('/auth/reset-password', { token, password }),
 };
 
 export const usersApi = {

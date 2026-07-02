@@ -42,6 +42,8 @@ model User {
   rol                 Rol                @default(CLIENTE)
   isVerified          Boolean            @default(false)
   verificationCode    String?
+  resetToken          String?
+  resetExpires        DateTime?
   fechaCreacion       DateTime           @default(now())
 
   // Relaciones

@@ -4,7 +4,7 @@ services:
   postgres_db:
     image: postgres:15-alpine
     container_name: siniestros_postgres
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_USER: admin_inter
       POSTGRES_PASSWORD: postgresAdmin
@@ -14,5 +14,41 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: siniestros_backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Conexión interna de Docker hacia Postgres
+      - DATABASE_URL=postgresql://admin_inter:postgresAdmin@postgres_db:5432/siniestros_mvp?schema=public
+      - JWT_SECRET=super_secreto_jwt_en_produccion_123
+      # Acuérdate de cambiar esto por tus accesos de Gmail con la App Password
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=tu_correo@gmail.com
+      - SMTP_PASS=tu_app_password
+    volumes:
+      # Volumen mapeado para que las fotos/PDFs de los siniestros no se pierdan
+      - siniestros_uploads:/app/uploads
+    depends_on:
+      - postgres_db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: siniestros_frontend
+    restart: unless-stopped
+    ports:
+      # Mapeamos el puerto 80 del Nginx interno al puerto 5173 de tu Anton
+      - "5173:80"
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:
+  siniestros_uploads:

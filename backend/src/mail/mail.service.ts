@@ -87,4 +87,27 @@ export class MailService {
       this.logger.error(`Error enviando correo de estatus a ${to}`, e);
     }
   }
+
+  async sendPasswordResetEmail(to: string, nombre: string, token: string) {
+    const url = `http://localhost:5173/reset-password?token=${token}`;
+    const html = `
+      <div style="font-family: sans-serif; max-w: 600px; margin: auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 12px;">
+        <h2 style="color: #1e293b;">Hola, ${nombre}</h2>
+        <p style="color: #475569;">Recibimos una solicitud para restablecer tu contraseña en el Portal de Siniestros.</p>
+        <p style="color: #475569;">Haz clic en el siguiente botón para crear una nueva (este enlace expira en 1 hora):</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${url}" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">Restablecer Contraseña</a>
+        </div>
+        <p style="color: #94a3b8; font-size: 12px;">Si tú no solicitaste esto, ignora este correo. Tu cuenta está segura.</p>
+      </div>
+    `;
+    try {
+      await this.transporter.sendMail({
+        from: `"Portal de Siniestros" <${process.env.SMTP_USER}>`,
+        to, subject: 'Recupera tu contraseña', html,
+      });
+    } catch (e) {
+      this.logger.error(`Error enviando correo de reset a ${to}`, e);
+    }
+  }
 }

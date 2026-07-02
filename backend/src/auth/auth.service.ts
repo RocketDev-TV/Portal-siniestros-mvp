@@ -13,6 +13,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { MailService } from '../mail/mail.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -93,5 +94,44 @@ export class AuthService {
         rol: user.rol,
       },
     };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    
+    if (user) {
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetExpires = new Date(Date.now() + 3600000); 
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { resetToken, resetExpires },
+      });
+
+      await this.mailService.sendPasswordResetEmail(user.email, user.nombre, resetToken);
+    }
+
+    return { message: 'Si el correo existe en nuestro sistema, recibirás un enlace con instrucciones para recuperar tu contraseña.' };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        resetExpires: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('El enlace es inválido o ha expirado.');
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashed, resetToken: null, resetExpires: null },
+    });
+
+    return { message: 'Contraseña actualizada correctamente.' };
   }
 }

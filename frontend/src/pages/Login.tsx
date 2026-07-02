@@ -135,6 +135,12 @@ export default function Login() {
                   'Iniciar sesión'
                 )}
               </button>
+
+              <p className="text-sm text-center mt-4">
+                <Link to="/forgot-password" className="text-indigo-600 font-semibold hover:text-indigo-800">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </p>
             </form>
 
             <p className="text-sm text-center text-slate-500 mt-6">
