@@ -18,6 +18,12 @@ export default function Register() {
   const [telefono, setTelefono] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  // --- Validaciones de contraseña en tiempo real ---
+  const hasMinLength = password.length >= 6;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  const isPasswordValid = hasMinLength && hasUpper && hasSymbol;
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -30,6 +36,11 @@ export default function Register() {
       return;
     }
 
+    if (!isPasswordValid) {
+      setError('La contraseña no cumple con los requisitos de seguridad.');
+      return;
+    }
+    
     setLoading(true);
     try {
       await authApi.register({ nombre, email, password, telefono: telefono || undefined });
@@ -119,13 +130,31 @@ export default function Register() {
                 onChange={(e) => setTelefono(e.target.value)}
               />
 
-              <PasswordInput
-                label="Contraseña"
-                required
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="space-y-1">
+                <PasswordInput
+                  label="Contraseña"
+                  required
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                
+                {/* --- Checklist visual de contraseña --- */}
+                {password.length > 0 && (
+                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 mt-2 space-y-1.5 animate-fade-in">
+                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">Tu contraseña debe tener:</p>
+                    <div className={`flex items-center gap-2 text-xs transition-colors ${hasMinLength ? 'text-green-600 font-medium' : 'text-slate-400'}`}>
+                      <span className="text-lg leading-none">{hasMinLength ? '✓' : '•'}</span> Al menos 6 caracteres
+                    </div>
+                    <div className={`flex items-center gap-2 text-xs transition-colors ${hasUpper ? 'text-green-600 font-medium' : 'text-slate-400'}`}>
+                      <span className="text-lg leading-none">{hasUpper ? '✓' : '•'}</span> Al menos una letra mayúscula
+                    </div>
+                    <div className={`flex items-center gap-2 text-xs transition-colors ${hasSymbol ? 'text-green-600 font-medium' : 'text-slate-400'}`}>
+                      <span className="text-lg leading-none">{hasSymbol ? '✓' : '•'}</span> Al menos un símbolo (ej. !@#$%)
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <PasswordInput
                 label="Confirmar contraseña"

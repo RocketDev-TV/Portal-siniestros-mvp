@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { adminUsersApi, siniestrosApi } from '../services/api';
-import type { EstatusSiniestro, Siniestro, UserAdmin } from '../types';
+import type { EstatusSiniestro, Siniestro, UserAdmin, Rol } from '../types';
 import StatusBadge, { statusLabel } from '../components/StatusBadge';
 import MetricCard from '../components/MetricCard';
 import RolBadge from '../components/RolBadge';
@@ -38,6 +38,7 @@ export default function AdminDashboard() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const [usuarios, setUsuarios] = useState<UserAdmin[]>([]);
+  const [filtroRol, setFiltroRol] = useState<Rol | 'TODOS'>('TODOS');
   const [loadingUsuarios, setLoadingUsuarios] = useState(true);
   const [userModal, setUserModal] = useState<'create' | UserAdmin | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<UserAdmin | null>(null);
@@ -277,7 +278,21 @@ export default function AdminDashboard() {
       {tab === 'usuarios' && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-slate-500">{usuarios.length} usuarios registrados</p>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-slate-500">
+                {filtroRol === 'TODOS' ? usuarios.length : usuarios.filter(u => u.rol === filtroRol).length} de {usuarios.length} usuarios registrados
+              </p>
+              <select
+                value={filtroRol}
+                onChange={(e) => setFiltroRol(e.target.value as Rol | 'TODOS')}
+                className="border border-slate-300 rounded-xl px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="TODOS">Todos los roles</option>
+                <option value="CLIENTE">Clientes</option>
+                <option value="AJUSTADOR">Ajustadores</option>
+                <option value="ADMIN">Administradores</option>
+              </select>
+            </div>
             <button
               onClick={() => setUserModal('create')}
               className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-4 py-2.5 transition-colors shadow-sm"
@@ -302,7 +317,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {usuarios.map((u) => (
+                  {(filtroRol === 'TODOS' ? usuarios : usuarios.filter(u => u.rol === filtroRol)).map((u) => (
                     <tr key={u.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-4 py-3.5 font-medium text-slate-800">{u.nombre}</td>
                       <td className="px-4 py-3.5 text-slate-500">{u.email}</td>

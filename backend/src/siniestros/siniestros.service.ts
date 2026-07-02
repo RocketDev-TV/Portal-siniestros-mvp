@@ -3,12 +3,15 @@ import { Prisma, Rol } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSiniestroDto } from './dto/create-siniestro.dto';
 import { UpdateEstatusDto } from './dto/update-estatus.dto';
+import { MailService } from '../mail/mail.service';
 
 type ReqUser = { id: string; rol: Rol };
 
 @Injectable()
 export class SiniestrosService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService, 
+    private readonly mailService: MailService,){}
 
   async findAll(user: ReqUser) {
     const where =
@@ -122,7 +125,7 @@ export class SiniestrosService {
 
     if (user.rol === Rol.AJUSTADOR && siniestro.ajustadorId !== user.id) throw new ForbiddenException();
 
-    return this.prisma.siniestro.update({
+    const siniestroActualizado = await this.prisma.siniestro.update({
       where: { id },
       data: {
         estatus: dto.nuevoEstatus,
@@ -136,11 +139,25 @@ export class SiniestrosService {
         },
       },
       include: {
+        cliente: { select: { nombre: true, email: true } }, // Traemos los datos del cliente para el correo
+        ajustador: { select: { nombre: true, email: true, telefono: true } },
         historial: {
           include: { cambiadoPor: { select: { nombre: true, rol: true } } },
           orderBy: { fechaCambio: 'asc' },
         },
       },
     });
+
+    // Disparar el correo al cliente
+    await this.mailService.sendStatusUpdateEmail(
+      siniestroActualizado.cliente.email,
+      siniestroActualizado.cliente.nombre,
+      siniestroActualizado.folio,
+      dto.nuevoEstatus,
+      dto.comentario,
+      siniestroActualizado.ajustador
+    );
+
+    return siniestroActualizado;
   }
 }

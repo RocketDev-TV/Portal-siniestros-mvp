@@ -12,12 +12,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -52,8 +54,9 @@ export class AuthService {
       },
     });
 
-    // Fase 3 enviará este código por correo; por ahora se simula en consola.
-    console.log(`[OTP] Código de verificación para ${user.email}: ${verificationCode}`);
+    // Enviar código por correo real
+    await this.mailService.sendOtpEmail(user.email, user.nombre, verificationCode);
+    console.log(`[OTP] Código de verificación para ${user.email}: ${verificationCode}`); // Lo dejamos por si falla tu SMTP
 
     return { message: 'Cuenta creada. Revisa tu correo para verificar tu cuenta.', email: user.email };
   }
